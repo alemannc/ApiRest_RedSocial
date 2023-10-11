@@ -1,6 +1,17 @@
 // import dependencias y modelos
 const User = require("../models/user");
 const bcrypt = require("bcrypt")
+const _ = require('lodash');
+const jwt = require("../services/JWT")
+
+
+
+const prueba = (req,res)=>{
+    return res.status(200).send({
+        message:"ruta de prueba",
+        Usuario:req.user
+    })
+}
 
 //Registro de usuarios 
 const register = async (req, res) => {
@@ -33,7 +44,8 @@ const register = async (req, res) => {
         if (users && users.length > 0) {
             return res.status(200).send({
                 status: "success",
-                message: "El usuario ya existe"
+                message: "El usuario ya existe",
+                usuario:users
             });
         }
 
@@ -57,16 +69,48 @@ const register = async (req, res) => {
 
 }
 
-const login = (req, res)=>{
-    let params = req.body
+const login = async (req, res) => {
+    // Recoger parametros del body
+    let params = req.body;
 
-    
+    if (!params.email || !params.password) {
+        return res.status(400).send({ status: "error", message: "Faltan datos por enviar" });
+    }
 
+    try {
+        // Buscar el usuario por email
+        const user = await User.findOne({ email: params.email.toLowerCase() });
+        if (!user) {
+            return res.status(400).send({ status: "error", message: "No se encontró el usuario en la base de datos" });
+        }
+        const userNullPassword =  _.omit(user.toObject(), 'password');
+        // Comparar la contraseña proporcionada con la contraseña almacenada
+        const passwordMatch = await bcrypt.compare(params.password, user.password);
+
+        if (!passwordMatch) {
+            return res.status(400).send({ status: "error", message: "Contraseña incorrecta" });
+        }
+        const token = jwt.createToken(user)
+        // Si las credenciales son correctas, puedes devolver el usuario
+        return res.status(200).send({
+            status: "success",
+            message: "Te has identificado correctamente",
+            userNullPassword,
+            token:token
+            
+        });
+    } catch (error) {
+        return res.status(500).send({ status: "error", message: "Error al buscar el usuario en la base de datos" });
+    }
+
+    // Devolver Token
+    // Devolver datos del usuario
 }
 
 
 
 module.exports = {
+    prueba,
     register,
     login,
 };
