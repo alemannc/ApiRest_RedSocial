@@ -2,7 +2,7 @@
 const User = require("../models/user");
 const bcrypt = require("bcrypt")
 const _ = require('lodash');
-const jwt = require("../services/JWT")
+const jwt = require("../services/JWT");
 
 
 
@@ -108,9 +108,33 @@ const login = async (req, res) => {
 }
 
 
+const profile = async (req,res)=>{
+    // Recoger id del endpoint
+    const id = req.params.id
+
+    //Consultar el usuario con el id
+    try {
+        const user = await User.findById(id)
+        const userFind =  _.omit(user.toObject(), ['password','role']);
+
+        if(!user) res.status(404).send({message: "El usuario no existe",status:"error",error:error})
+        res.status(200).send({status:"succes",User:userFind})
+
+        
+    } catch (error) {
+        res.status(500).send({
+            message: "Ocurrio un error en la solicitud",
+            status:"error",
+            error:error
+           })
+    }
+}
+
+
 
 module.exports = {
     prueba,
     register,
     login,
+    profile
 };

@@ -8,6 +8,7 @@ const middelwar = require("../middelwares/auth")
 router.get("/prueba-user",middelwar,userController.prueba)
 router.post("/register",userController.register)
 router.post("/login",userController.login)
+router.get("/profile/:id",middelwar,userController.profile)
 
 
 
