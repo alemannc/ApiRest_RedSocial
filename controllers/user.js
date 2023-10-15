@@ -3,6 +3,7 @@ const User = require("../models/user");
 const bcrypt = require("bcrypt")
 const _ = require('lodash');
 const jwt = require("../services/JWT");
+const moongosePaginate = require ("mongoose-pagination")
 
 
 
@@ -130,11 +131,54 @@ const profile = async (req,res)=>{
     }
 }
 
+const list = async (req, res) => {
+    // Controlar en qué página estamos
+    let page = 1;
+    if (req.params.page) {
+        page = req.params.page;
+    }
+    page = parseInt(page);
+
+    // Cantidad de elementos por página
+    let itemsPerPage = 5;
+
+    // Calcular el valor de "skip" para la paginación
+    const skip = (page - 1) * itemsPerPage;
+
+    try {
+        const users = await User.find()
+            .sort("_id")
+            .skip(skip)
+            .limit(itemsPerPage)
+            .exec();
+
+        const total = await User.countDocuments();
+
+        res.status(200).send({
+            status: "success",
+            users: users,
+            page: page,
+            itemsPerPage: itemsPerPage,
+            total: total,
+            pages: Math.ceil(total/itemsPerPage)
+        });
+    } catch (error) {
+        res.status(500).send({
+            message: "Ocurrió un error en la solicitud",
+            status: "error",
+            error: error
+        });
+    }
+}
+
+
+
 
 
 module.exports = {
     prueba,
     register,
     login,
-    profile
+    profile,
+    list
 };

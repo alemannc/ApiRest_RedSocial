@@ -9,6 +9,7 @@ router.get("/prueba-user",middelwar,userController.prueba)
 router.post("/register",userController.register)
 router.post("/login",userController.login)
 router.get("/profile/:id",middelwar,userController.profile)
+router.get("/list/:page?",middelwar,userController.list)
 
 
 
