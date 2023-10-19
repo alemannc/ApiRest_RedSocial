@@ -3,6 +3,7 @@ const User = require("../models/user");
 const bcrypt = require("bcrypt")
 const _ = require('lodash');
 const jwt = require("../services/JWT");
+const fs = require("fs")
 const moongosePaginate = require ("mongoose-pagination")
 
 
@@ -171,8 +172,83 @@ const list = async (req, res) => {
     }
 }
 
+const update = async (req, res) => {
+    try {
+        // Recoger info del usuario para actualizar
+        let userToken = req.user;
+        let userToUpdate = req.body;
+        delete userToUpdate.iat;
+        delete userToUpdate.exp;
+        delete userToUpdate.role;
+        // Comprobar si el user ya existe
+        const users = await User.find({ $or: [{ email: userToUpdate.email.toLowerCase() }, { nick: userToUpdate.nick.toLowerCase() }] });
+        let flag = false;
+        users.forEach(user => { if (user && user._id != userToken.id) flag = true });
+        if (flag) {
+            return res.status(200).send({
+                status: "success",
+                message: "El usuario ya existe",
+            });
+        }
+        if (userToUpdate.password) {
+            userToUpdate.password = await bcrypt.hash(userToUpdate.password, 10);
+        }
+
+        // Buscar y actualizar
+        console.log(userToken)
+        let updateUser = await User.findByIdAndUpdate(userToken.id, userToUpdate,{ new: true });
+        console.log(updateUser)
+        // Enviar la respuesta después de la actualización
+        res.status(200).send({ status: "success", message: "Metodo de actualizar usuario", user: updateUser });
+    } catch (error) {
+        res.status(500).send({
+            message: "Ocurrió un error en la solicitud",
+            status: "error",
+            error: error
+        });
+    }
+}
 
 
+
+const upload = async (req,res)=>{
+
+    try {
+        //Recoger el fichero de imagen
+        if(!req.file) res.status(404).send({ status: "error", message: "La peticion no incluye imagem"});
+    
+        //Nombre del archivo
+        let image= req.file.originalname;
+    
+        //Sacar la extencion
+        const imgSplit= image.split("\.");
+        const extension = imgSplit[1]
+        
+        if(extension!="png" && extension!="jpg" && extension!="jpeg" && extension!="gif"){
+            //Borrar archivo subido
+            const filePath=req.file.path; 
+            const fileDelete=fs.unlinkSync(filePath);
+            return res.status(400).send({ status: "error", message: "Extencion del fichero invalida"});
+        }
+        // Si es correcta guardar la imagen en bbdd
+        const UserImageUpdate=await  User.findOneAndUpdate({_id:req.user.id}, { image: req.file.filename},{new:true})
+
+        console.log(  "USER IMAGE EUPDATEE", UserImageUpdate)
+        return res.status(200).send({
+            message:"ruta de prueba",
+            Usuario:UserImageUpdate,
+        })
+
+    } catch (error) {
+        const filePath=req.file.path; 
+        const fileDelete=fs.unlinkSync(filePath);
+        res.status(500).send({
+            message: "Ocurrió un error en la solicitud",
+            status: "error",
+            error: error
+        });
+    }
+}
 
 
 module.exports = {
@@ -180,5 +256,7 @@ module.exports = {
     register,
     login,
     profile,
-    list
+    list,
+    update,
+    upload
 };
