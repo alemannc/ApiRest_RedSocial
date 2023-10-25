@@ -10,7 +10,7 @@ router.get("/prueba-follow",followController.pruebaFollow)
 router.post("/save",middelwar,followController.save)
 router.delete("/unfollow/:id",middelwar,followController.unfollow)
 router.get("/following/:id?/:page?",middelwar,followController.following)
-router.get("/prueba-follow",middelwar,followController.follower)
+router.get("/followers/:id?/:page?",middelwar,followController.follower)
 
 
 

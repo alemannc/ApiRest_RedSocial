@@ -91,7 +91,7 @@ const following =async (req, res) => {
         itemsPerPage = 5;
         //Find a follow 
         try {
-            const follows = await Follow.find({ user: userId }).populate("user followed", "-password -role -__v").paginate(page,itemsPerPage).exec();
+            const follows = await Follow.find({ user: userId }).populate("followed", "-password -role -__v").paginate(page,itemsPerPage).exec();
             let followUserId= await followService.followUsersId(req.user.id)
             
             return res.status(200).send({
@@ -112,8 +112,38 @@ const following =async (req, res) => {
 }
 
 //Listado de usuarios que me siguen
-const follower = (req, res) => {
+const follower =async (req, res) => {
 
+        // id del user identificado
+        let userId = req.user.id;
+        console.log(req.user.id, "USEEER")
+        //comprobar id por la url
+        if (req.params.id) userId = req.params.id;
+        //comprobar si llega la pagina por la url
+        let page = 1;
+        if (req.params.page) page = parseInt(req.params.page);
+        //usuarios por pagina que quiero mostrar
+        itemsPerPage = 5;
+        //Find a follow 
+        try {
+            const follows = await Follow.find({ followed: userId }).populate("user", "-password -role -__v").paginate(page,itemsPerPage).exec();
+            let followUserId= await followService.followUsersId(req.user.id)
+            
+            return res.status(200).send({
+              message: "Listado de usuarios que me siguen",
+              follows,
+              page,
+              itemsPerPage,
+              userFollowing:followUserId.followingClean,
+              userFollowers:followUserId.followersClean,
+            });
+          } catch (error) {
+            return res.status(500).send({
+              message: "Error al obtener la lista de seguidores",
+              error: error,
+            });
+          }
+   
 }
 
 
