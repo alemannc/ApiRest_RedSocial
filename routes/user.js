@@ -25,6 +25,8 @@ router.get("/profile/:id",middelwar,userController.profile)
 router.get("/list/:page?",middelwar,userController.list)
 router.put("/update",middelwar,userController.update)
 router.post("/upload",[middelwar,uploads.single("file0")],userController.upload)
+router.get("/avatar/:file",middelwar,userController.avatar)
+
 
 
 

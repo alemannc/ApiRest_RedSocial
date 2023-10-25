@@ -4,14 +4,15 @@ const bcrypt = require("bcrypt")
 const _ = require('lodash');
 const jwt = require("../services/JWT");
 const fs = require("fs")
-const moongosePaginate = require ("mongoose-pagination")
+const moongosePaginate = require("mongoose-pagination")
+const path = require("path")
+const followService = require("../services/followService")
 
 
-
-const prueba = (req,res)=>{
+const prueba = (req, res) => {
     return res.status(200).send({
-        message:"ruta de prueba",
-        Usuario:req.user
+        message: "ruta de prueba",
+        Usuario: req.user
     })
 }
 
@@ -47,7 +48,7 @@ const register = async (req, res) => {
             return res.status(200).send({
                 status: "success",
                 message: "El usuario ya existe",
-                usuario:users
+                usuario: users
             });
         }
 
@@ -85,7 +86,7 @@ const login = async (req, res) => {
         if (!user) {
             return res.status(400).send({ status: "error", message: "No se encontró el usuario en la base de datos" });
         }
-        const userNullPassword =  _.omit(user.toObject(), 'password');
+        const userNullPassword = _.omit(user.toObject(), 'password');
         // Comparar la contraseña proporcionada con la contraseña almacenada
         const passwordMatch = await bcrypt.compare(params.password, user.password);
 
@@ -98,8 +99,8 @@ const login = async (req, res) => {
             status: "success",
             message: "Te has identificado correctamente",
             userNullPassword,
-            token:token
-            
+            token: token
+
         });
     } catch (error) {
         return res.status(500).send({ status: "error", message: "Error al buscar el usuario en la base de datos" });
@@ -110,25 +111,30 @@ const login = async (req, res) => {
 }
 
 
-const profile = async (req,res)=>{
+const profile = async (req, res) => {
     // Recoger id del endpoint
     const id = req.params.id
 
     //Consultar el usuario con el id
     try {
         const user = await User.findById(id)
-        const userFind =  _.omit(user.toObject(), ['password','role']);
+        const userFind = _.omit(user.toObject(), ['password', 'role']);
 
-        if(!user) res.status(404).send({message: "El usuario no existe",status:"error",error:error})
-        res.status(200).send({status:"succes",User:userFind})
+        if (!user) res.status(404).send({ message: "El usuario no existe", status: "error", error: error })
 
-        
+        const followInfo = await followService.followThisUser(req.user.id, id)
+        res.status(200).send({
+            status: "succes",
+            User: userFind,
+            user_following: followInfo.following,
+            user_follow_me: followInfo.followers
+        })
     } catch (error) {
         res.status(500).send({
             message: "Ocurrio un error en la solicitud",
-            status:"error",
-            error:error
-           })
+            status: "error",
+            error: error
+        })
     }
 }
 
@@ -154,14 +160,16 @@ const list = async (req, res) => {
             .exec();
 
         const total = await User.countDocuments();
-
+        const followInfo = await followService.followUsersId(req.user.id)
         res.status(200).send({
             status: "success",
             users: users,
             page: page,
             itemsPerPage: itemsPerPage,
             total: total,
-            pages: Math.ceil(total/itemsPerPage)
+            pages: Math.ceil(total / itemsPerPage),
+            userFollowing:followUserId.followingClean,
+            userFollowers:followUserId.followersClean,
         });
     } catch (error) {
         res.status(500).send({
@@ -196,7 +204,7 @@ const update = async (req, res) => {
 
         // Buscar y actualizar
         console.log(userToken)
-        let updateUser = await User.findByIdAndUpdate(userToken.id, userToUpdate,{ new: true });
+        let updateUser = await User.findByIdAndUpdate(userToken.id, userToUpdate, { new: true });
         console.log(updateUser)
         // Enviar la respuesta después de la actualización
         res.status(200).send({ status: "success", message: "Metodo de actualizar usuario", user: updateUser });
@@ -211,37 +219,40 @@ const update = async (req, res) => {
 
 
 
-const upload = async (req,res)=>{
+const upload = async (req, res) => {
 
     try {
         //Recoger el fichero de imagen
-        if(!req.file) res.status(404).send({ status: "error", message: "La peticion no incluye imagem"});
-    
+        if (!req.file) res.status(404).send({ status: "error", message: "La peticion no incluye imagem" });
+
         //Nombre del archivo
-        let image= req.file.originalname;
-    
+        let image = req.file.originalname;
+
         //Sacar la extencion
-        const imgSplit= image.split("\.");
+        const imgSplit = image.split("\.");
         const extension = imgSplit[1]
-        
-        if(extension!="png" && extension!="jpg" && extension!="jpeg" && extension!="gif"){
+
+        if (extension != "png" && extension != "jpg" && extension != "jpeg" && extension != "gif") {
             //Borrar archivo subido
-            const filePath=req.file.path; 
-            const fileDelete=fs.unlinkSync(filePath);
-            return res.status(400).send({ status: "error", message: "Extencion del fichero invalida"});
+            const filePath = req.file.path;
+            const fileDelete = fs.unlinkSync(filePath);
+            return res.status(400).send({ status: "error", message: "Extencion del fichero invalida" });
         }
         // Si es correcta guardar la imagen en bbdd
-        const UserImageUpdate=await  User.findOneAndUpdate({_id:req.user.id}, { image: req.file.filename},{new:true})
+        const UserImageUpdate = await User.findOneAndUpdate({ _id: req.user.id }, { image: req.file.filename }, { new: true })
 
-        console.log(  "USER IMAGE EUPDATEE", UserImageUpdate)
+        // console.log("id user", req.user.id)
+        // console.log("USER", req.user)
         return res.status(200).send({
-            message:"ruta de prueba",
-            Usuario:UserImageUpdate,
+            message: "Imagen Actualizada",
+            Usuario: UserImageUpdate,
+            filePath: req.file,
+
         })
 
     } catch (error) {
-        const filePath=req.file.path; 
-        const fileDelete=fs.unlinkSync(filePath);
+        const filePath = req.file.path;
+        const fileDelete = fs.unlinkSync(filePath);
         res.status(500).send({
             message: "Ocurrió un error en la solicitud",
             status: "error",
@@ -250,7 +261,19 @@ const upload = async (req,res)=>{
     }
 }
 
+const avatar = (req, res) => {
+    // Sacar el parametro de la url 
+    const file = req.params.file
+    // path de la imagen
+    const filePath = "./uploads/avatars/" + file;
+    // comprobar que exista el path
+    fs.stat(filePath, (error, exists) => {
+        if (!exists) return res.status(404).send({ status: "error", message: "No existe la imagen" });
+    })
 
+    //Devolver file
+    return res.sendFile(path.resolve(filePath))
+}
 module.exports = {
     prueba,
     register,
@@ -258,5 +281,6 @@ module.exports = {
     profile,
     list,
     update,
-    upload
+    upload,
+    avatar
 };
