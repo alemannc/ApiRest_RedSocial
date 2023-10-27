@@ -1,7 +1,7 @@
 //Acciones de prueba
 const Follow = require("../models/follow")
 const User = require("../models/user")
-const moongosePaginate = require ("mongoose-pagination")
+const moongosePaginate = require("mongoose-pagination")
 const followService = require("../services/followService")
 
 const pruebaFollow = (req, res) => {
@@ -77,73 +77,73 @@ const unfollow = async (req, res) => {
 }
 
 //Listado de usuarios a los que sigo
-const following =async (req, res) => {
+const following = async (req, res) => {
 
-        // id del user identificado
-        let userId = req.user.id;
-        console.log(req.user.id, "USEEER")
-        //comprobar id por la url
-        if (req.params.id) userId = req.params.id;
-        //comprobar si llega la pagina por la url
-        let page = 1;
-        if (req.params.page) page = parseInt(req.params.page);
-        //usuarios por pagina que quiero mostrar
-        itemsPerPage = 5;
-        //Find a follow 
-        try {
-            const follows = await Follow.find({ user: userId }).populate("followed", "-password -role -__v").paginate(page,itemsPerPage).exec();
-            let followUserId= await followService.followUsersId(req.user.id)
-            
-            return res.status(200).send({
-              message: "Listado de usuarios que estás siguiendo",
-              follows,
-              page,
-              itemsPerPage,
-              userFollowing:followUserId.followingClean,
-              userFollowers:followUserId.followersClean,
-            });
-          } catch (error) {
-            return res.status(500).send({
-              message: "Error al obtener la lista de seguidores",
-              error: error,
-            });
-          }
-   
+    // id del user identificado
+    let userId = req.user.id;
+    console.log(req.user.id, "USEEER")
+    //comprobar id por la url
+    if (req.params.id) userId = req.params.id;
+    //comprobar si llega la pagina por la url
+    let page = 1;
+    if (req.params.page) page = parseInt(req.params.page);
+    //usuarios por pagina que quiero mostrar
+    itemsPerPage = 5;
+    //Find a follow 
+    try {
+        const follows = await Follow.find({ user: userId }).populate("followed", "-password -role -__v").paginate(page, itemsPerPage).exec();
+        let followUserId = await followService.followUsersId(req.user.id)
+
+        return res.status(200).send({
+            message: "Listado de usuarios que estás siguiendo",
+            follows,
+            page,
+            itemsPerPage,
+            userFollowing: followUserId.followingClean,
+            userFollowers: followUserId.followersClean,
+        });
+    } catch (error) {
+        return res.status(500).send({
+            message: "Error al obtener la lista de seguidores",
+            error: error,
+        });
+    }
+
 }
 
 //Listado de usuarios que me siguen
-const follower =async (req, res) => {
+const follower = async (req, res) => {
 
-        // id del user identificado
-        let userId = req.user.id;
-        console.log(req.user.id, "USEEER")
-        //comprobar id por la url
-        if (req.params.id) userId = req.params.id;
-        //comprobar si llega la pagina por la url
-        let page = 1;
-        if (req.params.page) page = parseInt(req.params.page);
-        //usuarios por pagina que quiero mostrar
-        itemsPerPage = 5;
-        //Find a follow 
-        try {
-            const follows = await Follow.find({ followed: userId }).populate("user", "-password -role -__v").paginate(page,itemsPerPage).exec();
-            let followUserId= await followService.followUsersId(req.user.id)
-            
-            return res.status(200).send({
-              message: "Listado de usuarios que me siguen",
-              follows,
-              page,
-              itemsPerPage,
-              userFollowing:followUserId.followingClean,
-              userFollowers:followUserId.followersClean,
-            });
-          } catch (error) {
-            return res.status(500).send({
-              message: "Error al obtener la lista de seguidores",
-              error: error,
-            });
-          }
-   
+    // id del user identificado
+    let userId = req.user.id;
+    console.log(req.user.id, "USEEER")
+    //comprobar id por la url
+    if (req.params.id) userId = req.params.id;
+    //comprobar si llega la pagina por la url
+    let page = 1;
+    if (req.params.page) page = parseInt(req.params.page);
+    //usuarios por pagina que quiero mostrar
+    itemsPerPage = 5;
+    //Find a follow 
+    try {
+        const follows = await Follow.find({ followed: userId }).populate("user", "-password -role -__v").paginate(page, itemsPerPage).exec();
+        let followUserId = await followService.followUsersId(req.user.id)
+
+        return res.status(200).send({
+            message: "Listado de usuarios que me siguen",
+            follows,
+            page,
+            itemsPerPage,
+            userFollowing: followUserId.followingClean,
+            userFollowers: followUserId.followersClean,
+        });
+    } catch (error) {
+        return res.status(500).send({
+            message: "Error al obtener la lista de seguidores",
+            error: error,
+        });
+    }
+
 }
 
 
